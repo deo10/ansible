@@ -1,0 +1,132 @@
+#Ansible#
+#LAMP setup
+# create inventory
+# setup SSH connection (create and copy certs)
+
+
+#inventory file content
+#[db_servers]
+#lamp-db ansible_host=172.20.1.101 ansible_ssh_private_key_file=/home/thor/.ssh/maria ansible_user=maria mysqlservice=mysqld mysql_port=3306 dbname=ecomdb dbuser=ecomuser dbpassword=ecompassword
+#[web_servers]
+#lampweb ansible_host=172.20.1.100 ansible_ssh_private_key_file=/home/thor/.ssh/john ansible_user=john httpd_port=80 repository=https://github.com/kodekloudhub/learning-app-ecommerce.git
+
+#deployment-yaml file
+---
+- hosts: all
+  become: true
+  tasks:
+    - name: install yum packages on both servers
+      yum:
+        name:
+          - libselinux-python
+          - libsemanage-python
+          - firewalld
+        state: installed
+
+- name: db server part
+  hosts: lamp-db
+  become: yes
+  tasks:
+    - name: yum install packages lamp-db
+      yum:
+        name:
+          - mariadb-server
+          - MySQL-python
+        state: installed
+
+    - name: Copy the MySQL Configuration file
+      copy:
+        src: files/my.cnf
+        dest: /etc/my.cnf
+
+    - name: Start and enable Service
+      service:
+        name: "{{ item }}"
+        state: started
+        enabled: yes
+      with_items:
+        - mariadb
+        - firewalld
+   
+    - name: Insert firewalld rule
+      firewalld:
+        port: "{{ mysql_port }}/tcp"
+        zone: public
+        permanent: yes
+        state: enabled
+        immediate: true
+
+    - name: Create Application Database
+      mysql_db:
+        name: "{{ dbname }}"
+        state: present
+
+    - name: Create Application Database User
+      mysql_user:
+        name: "{{ dbuser }}"
+        password: "{{ dbpassword }}"
+        priv: '*.*:ALL'
+        host: '172.20.1.100'
+        state: present
+
+    - name: Copy db-load-script.sql file to db server
+      copy:
+        src: files/db-load-script.sql
+        dest: /tmp/db-load-script.sql
+
+    - name: Load Inventory data
+      shell: mysql -f < /tmp/db-load-script.sql
+
+- name: web server part
+  hosts: lampweb
+  become: yes
+  tasks:
+    - name: yum install packages lamp-web
+      yum:
+        name:
+          - httpd
+          - php
+          - php-mysql
+          - git
+        state: installed
+
+    - name: Start and enable Service
+      service:
+        name: "{{ item }}"
+        state: started
+        enabled: yes
+      with_items:
+        - firewalld
+
+    - name: Insert firewalld rule
+      firewalld:
+        port: "{{ httpd_port }}/tcp"
+        zone: public
+        permanent: yes
+        state: enabled
+        immediate: true
+     
+    - name:  Set index.php as the default page
+      replace:
+        path: /etc/httpd/conf/httpd.conf
+        regexp: 'DirectoryIndex index.html'  # The string you want to find
+        replace: 'DirectoryIndex index.php'  # The string you want to replace it with
+
+    - name: Start and enable Service
+      service:
+        name: "{{ item }}"
+        state: started
+        enabled: yes
+      with_items:
+        - httpd
+
+    - name: Clone git repo to web server
+      git:
+        repo: "{{ repository }}"
+        dest: /var/www/html/
+        force: yes
+    
+    - name: Copy index.php file to web server
+      copy:
+        src: files/index.php
+        dest: /var/www/html/index.php
