@@ -1,0 +1,43 @@
+---
+- name: Copy and unarchive zip from local machine with param change
+  hosts: all
+  become: yes
+  tasks:
+    - name: Unarchive a file that is present on local machine
+      ansible.builtin.unarchive:
+        src: /usr/src/data/nautilus.zip
+        dest: /opt/data/
+        owner: tony
+        group: tony
+        mode: "0744"
+      when: inventory_hostname == "stapp01"
+    - name: Unarchive a file that is present on local machine
+      ansible.builtin.unarchive:
+        src: /usr/src/data/nautilus.zip
+        dest: /opt/data/
+        owner: steve
+        group: steve
+        mode: "0744"
+      when: inventory_hostname == "stapp02"
+    - name: Unarchive a file that is present on local machine
+      ansible.builtin.unarchive:
+        src: /usr/src/data/nautilus.zip
+        dest: /opt/data/
+        owner: banner
+        group: banner
+        mode: "0744"
+      when: inventory_hostname == "stapp03"
+
+# to check results
+# ansible all -a "ls -ltr /opt/data/" -i inventory
+
+---
+- name: Extract data.tar.gz on web1 and delete arh after extraction
+  hosts: web1
+  tasks:
+  - unarchive:
+      src: /root/data.tar.gz # https://github.com/kodekloudhub/Hello-World/archive/master.zip might be url
+      dest: /srv
+      remote_src: yes
+
+  - file: path=/root/data.tar.gz state=absent

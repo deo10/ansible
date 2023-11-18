@@ -1,0 +1,46 @@
+#install
+# sudo yum install epel-release -y ; sudo yum install ansible -y
+
+#Env setup
+# /etc/ansible/ansible.cfg #configuration file
+# ansible-config list #list all configurations
+# ansible-config view #show current config
+# ansible-config dump #show current settings
+
+#SSH Access setup
+# ssh-keygen -t rsa -b 2048 -f /home/thor/.ssh/ansible (empty fields) # create pub and priv keys for user ansible
+# ssh-copy-id -i /home/thor/.ssh/ansible.pub ansible@web1 # add ansisble (user name) pub key to the node
+
+ 
+#ping
+# ansible stapp01 -m ping -i inventory -v
+ 
+#inventory file
+# stapp01 ansible_host=172.16.238.10 ansible_ssh_pass=Ir0nM@n ansible_user=tony
+# stapp02 ansible_host=172.16.238.11 ansible_ssh_pass=Am3ric@ ansible_user=steve
+# tapp03 ansible_host=172.16.238.12 ansible_ssh_pass=BigGr33n ansible_user=banner
+
+#or with SSH connection
+# lamp-web ansible_host=172.20.1.100 ansible_ssh_private_key_file=/home/thor/.ssh/john ansible_user=john
+# web1 ansible_host=172.20.1.100 ansible_user=ansible ansible_ssh_private_key_file=~/.ssh/ansible
+
+# Inventory File
+# [db_servers]
+# lamp-db ansible_host=172.20.1.101 ansible_ssh_pass=maria ansible_user=maria mysqlservice=mysqld mysql_port=3306 dbname=ecomdb dbuser=ecomuser dbpassword=ecompassword
+
+# [web_servers]
+# lamp-web ansible_host=172.20.1.100 ansible_ssh_pass=john ansible_user=john httpd_port=80 repository=https://github.com/kodekloudhub/learning-app-ecommerce.git
+
+
+
+---
+#shell script hosts_data.sh#
+
+echo "ANSIBLE_GATHERING to False"
+export ANSIBLE_GATHERING=False
+
+echo "uptime on all nodes"
+ansible -a "uptime" all -i inventory
+
+echo "Create and run a playbook ~/playbooks/playbook.yml"
+ansible-playbook playbook.yml -i inventory -vv

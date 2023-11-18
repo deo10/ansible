@@ -1,0 +1,61 @@
+# The job must run at 12am everyday.
+# schedule should be 0 0 * * *.
+---
+- hosts: node00
+  become: true
+  tasks: 
+    - name: cron job
+      cron:
+        name: "Clear Lastlog"
+        minute: "0"
+        hour: "0"
+        job: echo "" > /var/log/lastlog
+		
+
+# script after every 2 hour (i.e 12am, 2am, 4am etc),
+# schedule should be 0 */2 * * *
+---
+- hosts: node00
+  become: true
+  tasks:
+    - name: cron script
+      cron:
+        name: "Free Memory Check"
+        minute: "0"
+        hour: "*/2"
+        job: "sh /root/free.sh"
+
+
+---
+- hosts: node00
+  become: true
+  tasks:
+    - name: remove cron 
+      cron:
+        name: "Check Memory"
+        state: absent
+		
+---
+- hosts: node00
+  become: true
+  tasks:
+    - name: clean cron after reboot
+      cron:
+        name: "clean"
+        special_time: reboot
+        job: rm -rf /tmp/*
+		
+---
+- name: Create cron for yum
+  hosts: node00
+  gather_facts: no
+  tasks:
+    - name: Creates a cron from file, every Sunday at 8:05 am
+      cron:
+        name: yum update
+        weekday: 0
+        minute: 5
+        hour: 8
+        user: root
+        job: "yum -y update"
+        cron_file: ansible_yum

@@ -1,0 +1,105 @@
+---
+- hosts: node01
+  become: true
+  tasks:
+    - name: Creating blog.txt file
+      file:
+        path: /opt/news/blog.txt
+        state: touch
+        group: sam
+
+- hosts: node02
+  become: true
+  tasks:
+    - name: Creating story.txt file
+      file:
+        path: /opt/news/story.txt
+        state: touch
+        owner: sam
+		
+---
+- name: Create new file with content
+  hosts: web1
+  tasks:
+  - lineinfile:
+      path: /var/www/html/index.html
+      line: 'This line was added using Ansible lineinfile module!'
+      create: yes
+
+
+#istall httpd and create/add content in index.html
+---
+- hosts: all
+  become: yes
+  tasks:
+    - name: Install httpd package    
+      yum: 
+        name: httpd 
+        state: installed
+    
+    - name: Start service httpd
+      service:
+        name: httpd
+        state: started #reloaded  \ restarted as option
+        enabled: yes
+        #permanent: yes
+        #immediate: yes
+
+    - name: Insert content into index.html
+      blockinfile:
+        create: true
+        path: /var/www/html/index.html
+        block: |
+          Welcome to XfusionCorp!
+          This is Nautilus sample file, created using Ansible!
+          Please do not modify this file manually!
+        owner: apache
+        group: apache
+        mode: '0755'
+        state: present
+
+---
+#option with lineinfile
+
+    - name: Insert line into index.html
+      lineinfile:
+        path: /var/www/html/index.html
+        insertbefore: BOF
+        line: "Welcome to XfusionCorp!"
+        owner: apache
+        group: apache
+        mode: '0755'
+        state: present
+		
+#check 
+# ansible all -a "cat /var/www/html/index.html" -i inventory
+
+
+#replace string in txt file
+---
+- name: Replace string in a text file
+  hosts: all
+  become: yes
+  tasks:
+    - name: Replace string in the text file on "stapp01"
+      replace:
+        path: /opt/finance/blog.txt
+        regexp: 'xFusionCorp'  # The string you want to find
+        replace: 'Nautilus'  # The string you want to replace it with
+      register: replace_result
+      when: inventory_hostname == "stapp01"
+    - name: Replace string in the text file on "stapp02"
+      replace:
+        path: /opt/finance/story.txt
+        regexp: 'Nautilus'  # The string you want to find
+        replace: 'KodeKloud'  # The string you want to replace it with
+      register: replace_result
+      when: inventory_hostname == "stapp02"
+    - name: Replace string in the text file on "stapp03"
+      replace:
+        path: /opt/finance/media.txt
+        regexp: 'KodeKloud'  # The string you want to find
+        replace: 'xFusionCorp Industries'  # The string you want to replace it with
+      register: replace_result
+      when: inventory_hostname == "stapp03"	
+

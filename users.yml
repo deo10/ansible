@@ -1,0 +1,20 @@
+---
+- hosts: web1
+  become: true
+  tasks:
+    - name: Create user "angel" on web1
+      user:
+        name: angel
+      state: present
+
+#Create group and user in it
+---
+- hosts: all
+  tasks:
+    - group:
+        name: 'admin'
+        state: present
+    - user:
+        name: 'admin'
+        uid: 2048
+        group: 'admin'

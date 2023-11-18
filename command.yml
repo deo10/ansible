@@ -1,0 +1,12 @@
+---
+- name: Cat /etc/redhat-release
+  hosts: all
+  tasks:
+    - name: Cat /etc/redhat-release
+      command: cat /etc/redhat-release
+      register: redhat_release
+    - name: Display RedHat Release
+      debug:
+        var: redhat_release.stdout_lines
+		
+# ansible-playbook playbook.yml -i inventory -vv #vv to run this playbook in verbose mode

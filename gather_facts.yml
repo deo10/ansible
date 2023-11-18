@@ -1,0 +1,18 @@
+# ansible-playbook web.yml -i inventory | grep distribution
+---
+- name: Get and print facts from the hosts
+  hosts: all
+  tasks:
+    - debug:
+        var: ansible_facts
+
+---
+- hosts: db1
+  gather_facts: True
+  tasks:
+    - name: Get server architecture
+      debug:
+        var: ansible_facts.architecture #moving to the next level in list of facts
+
+#or using terminal command
+# ansible -m setup localhost #gather ansible_facts from localhost
