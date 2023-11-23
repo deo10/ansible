@@ -1,0 +1,293 @@
+#jinja2 templates
+
+#template hostinfo.j2
+#This is my full inventory hostname {{inventory_hostname}} #Fill variable for full inventory hostname
+#This is my short inventory hostname {{inventory_hostname_short}} #Fill variable for short inventory hostname
+#This is my inventory file {{inventory_file}} #Fill variable for inventory file
+
+#inventory
+#node00.host ansible_host=172.20.1.100 ansible_ssh_pass=Passw0rd ansible_user=root
+#node01.host ansible_host=172.20.1.101 ansible_ssh_pass=Passw0rd ansible_user=root dns_server=8.8.8.8
+
+---
+- hosts: node00.host
+  gather_facts: false
+  tasks:
+    - name : hostinfo
+      template:
+        src: hostinfo.j2
+        dest: /root/hostinfo
+
+#results of /root/hostinfo
+#node00.host | CHANGED | rc=0 >>
+#This is my full inventory hostname node00.host #Fill variable for full inventory hostname
+#This is my short inventory hostname node00 #Fill variable for short inventory hostname
+#This is my inventory file /home/thor/playbooks/inventory #Fill variable for inventory file
+
+
+
+---
+- hosts: node00.host
+  gather_facts: yes
+  tasks:
+  - shell: "echo  {{ inventory_hostname }} {{ ansible_default_ipv4.address }} >> /etc/hosts"
+
+#results:
+# ansible all -a "cat /etc/hosts" -i inventory 
+# node00.host | CHANGED | rc=0 >>
+# 127.0.0.1       localhost
+# ::1     localhost ip6-localhost ip6-loopback
+# fe00::0 ip6-localnet
+# ff00::0 ip6-mcastprefix
+# ff02::1 ip6-allnodes
+# ff02::2 ip6-allrouters
+# 172.20.1.100    node00.host node00
+# 172.17.0.6      node00.host node00
+# node00.host 172.20.1.100 #this is added by playbook
+
+#--------------------
+
+##inventory##
+#monitoring_server ansible_host=172.20.1.100 ansible_ssh_pass=Passw0rd ansible_user=root
+
+#[lamp_app]
+# web0001 ansible_hostname=web0001.company.com ansible_host=10.1.1.101 monitor_port=8080 protocol=http
+# web0002 ansible_hostname=web0002.company.com ansible_host=10.1.1.102 monitor_port=8080 protocol=http
+# db0003 ansible_hostname=db0003.company.com ansible_host=10.1.1.103 monitor_port=3306 protocol=tcp
+# db0004 ansible_hostname=db0004.company.com ansible_host=10.1.1.104 monitor_port=3306 protocol=tcp
+# db0005 ansible_hostname=db0005.company.com ansible_host=10.1.1.105 monitor_port=3306 protocol=tcp
+
+##template file - ./templates/agents.conf.j2 
+#Create cfg file with hostname, ipaddress, monitor_port, type, protocol
+# {% for host in groups['lamp_app'] %}
+# {{ host }}, {{ hostvars[host]['ansible_host'] }}, {{ hostvars[host]['monitor_port'] }}, {{ hostvars[host]['protocol'] }}
+# {% endfor %}
+
+##playbook##
+---
+- hosts: monitoring_server
+  become: true
+  tasks:
+    - name: monitoring server
+      template:
+        src: agents.conf.j2
+        dest: /etc/monitor/agents.conf
+
+##results##
+# ansible monitoring_server -a "cat /etc/monitor/agents.conf" -i inventory
+
+#monitoring_server | CHANGED | rc=0 >>
+#hostname, ipaddress, monitor_port, type, protocol
+
+# web0001, 10.1.1.101, 8080, http
+# web0002, 10.1.1.102, 8080, http
+# db0003, 10.1.1.103, 3306, tcp
+# db0004, 10.1.1.104, 3306, tcp
+# db0005, 10.1.1.105, 3306, tcp
+
+#----------------------------------------
+
+##inventory##
+#load_balancer ansible_host=172.20.1.100 ansible_ssh_pass=Passw0rd ansible_user=root
+
+#[web]
+#web0001 ansible_hostname=web0001.company.com ansible_host=172.20.1.102 ansible_ssh_pass=Passw0rd
+#web0002 ansible_hostname=web0002.company.com ansible_host=172.20.1.103 ansible_ssh_pass=Passw0rd
+#web0003 ansible_hostname=web0003.company.com ansible_host=172.20.1.104 ansible_ssh_pass=Passw0rd
+
+
+##/templates/load-balancer.conf.j2##
+
+# Define which servers to include in the load balancing scheme.
+# It's best to use the servers' private IPs for better performance and security.
+# You can find the private IPs at your UpCloud control panel Network section.
+# http {
+#    upstream backend {
+#        {% for host in groups['web'] %}
+#      server  {{ hostvars[host]['ansible_host'] }};
+#        {% endfor %}
+#    }
+
+#    # This server accepts all traffic to port 80 and passes it to the upstream.
+#    # Notice that the upstream name and the proxy_pass need to match.
+
+#    server {
+#       listen 80;
+
+#       location / {
+#           proxy_pass http://backend;
+#       }
+#    }
+# }
+
+##playbook##
+---
+- hosts: all
+  become: true
+  tasks:
+    - name: load balancer
+      template:
+        src: load-balancer.conf.j2
+        dest: /etc/nginx/conf.d/load-balancer.conf
+      run_once: yes
+
+##results##
+# ansible all -a "cat /etc/nginx/conf.d/load-balancer.conf" -i inventory
+
+# Define which servers to include in the load balancing scheme.
+# It's best to use the servers' private IPs for better performance and security.
+# You can find the private IPs at your UpCloud control panel Network section.
+# http {
+#    upstream backend {
+#             server  172.20.1.102;
+#              server  172.20.1.103;
+#              server  172.20.1.104;
+#           }
+
+#    # This server accepts all traffic to port 80 and passes it to the upstream.
+#    # Notice that the upstream name and the proxy_pass need to match.
+
+#    server {
+#       listen 80;
+
+#       location / {
+#           proxy_pass http://backend;
+#       }
+#    }
+# }
+
+
+#-------------------------------
+
+
+##inventory
+# inventory_server ansible_host=172.20.1.100 ansible_ssh_pass=Passw0rd ansible_user=root
+
+# [web]
+# web0001 ansible_hostname=web0001.company.com ansible_host=172.20.1.101 ansible_ssh_pass=Passw0rd ansible_user=root
+# web0002 ansible_hostname=web0002.company.com ansible_host=172.20.1.101 ansible_ssh_pass=Passw0rd ansible_user=root
+# web0003 ansible_hostname=web0003.company.com ansible_host=172.20.1.101 ansible_ssh_pass=Passw0rd ansible_user=root
+
+##template inventory.csv.j2 
+# hostname, architecture, distribution_version, mem_total_mb, processor_cores, processor_count
+# {% for host in groups['web'] %}
+# {{ host }}, {{ hostvars[host]['ansible_architecture'] }}, {{ hostvars[host]['ansible_distribution_version'] }}, {{ hostvars[host]['ansible_memtotal_mb'] }}, {{ hostvars[host]['ansible_processor_cores'] }}, {{ hostvars[host]['ansible_processor_count'] }}
+# {% endfor %}
+
+
+
+##playbook
+---
+- hosts: all
+  tasks:
+    - setup:
+
+- hosts: inventory_server
+  become: true
+  tasks:
+    - name: inventory
+      template:
+        src: inventory.csv.j2
+        dest: /tmp/inventory.csv
+      run_once: yes
+
+
+##results
+# ansible inventory_server -a "cat /tmp/inventory.csv" -i inventory
+# inventory_server | CHANGED | rc=0 >>
+# hostname, architecture, distribution_version, mem_total_mb, processor_cores, processor_count
+
+#   web0001, x86_64, 7.6.1810, 209557, 9, 2
+#   web0002, x86_64, 7.6.1810, 209557, 9, 2
+#   web0003, x86_64, 7.6.1810, 209557, 9, 2
+
+
+#------------
+
+#template
+# hostname, free memory, uptime
+# {% for host in groups['web'] %}
+# {{ host }}, {{ hostvars[host]['ansible_memfree_mb'] }}, {{ hostvars[host]['ansible_uptime_seconds'] }}
+# {% endfor %}
+
+
+# inventory
+# reporting_server ansible_host=172.20.1.100 ansible_ssh_pass=Passw0rd ansible_user=root
+
+# [web]
+# web0001 ansible_hostname=web0001.company.com ansible_host=172.20.1.101 ansible_ssh_pass=Passw0rd ansible_user=root
+# web0002 ansible_hostname=web0002.company.com ansible_host=172.20.1.101 ansible_ssh_pass=Passw0rd ansible_user=root
+# web0003 ansible_hostname=web0003.company.com ansible_host=172.20.1.101 ansible_ssh_pass=Passw0rd ansible_user=root
+
+
+# playbook
+- hosts: all
+  gather_facts: yes
+  tasks:
+    - template:
+        src: report.csv.j2
+        dest: /tmp/report.csv
+      delegate_to: reporting_server
+      run_once: yes
+
+
+# results
+# ansible reporting_server -a "cat /tmp/report.csv" -i inventory 
+# reporting_server | CHANGED | rc=0 >>
+# hostname, free memory, uptime
+# web0001, 1524, 1978
+# web0002, 1792, 1979
+# web0003, 1446, 1978
+
+
+#------------------------------
+
+# template templates/hosts.j2
+# #eg: host001 192.168.1.1
+# {% for host in groups[GROUP_NAME] %}
+# {{ host }} {{ hostvars[host]['ansible_host'] }}
+# {% endfor %}
+
+#inventory
+# dns_server_america ansible_host=172.20.1.100 ansible_ssh_pass=Passw0rd ansible_user=root
+# dns_server_asia ansible_host=172.20.1.101 ansible_ssh_pass=Passw0rd ansible_user=root
+
+# [america]
+# web0001 ansible_hostname=web0001.company.com ansible_host=10.1.1.101 ansible_ssh_pass=Passw0rd
+# web0002 ansible_hostname=web0002.company.com ansible_host=10.1.1.102 ansible_ssh_pass=Passw0rd
+# web0003 ansible_hostname=web0003.company.com ansible_host=10.1.1.103 ansible_ssh_pass=Passw0rd
+# web0004 ansible_hostname=web0004.company.com ansible_host=10.1.1.104 ansible_ssh_pass=Passw0rd
+# web0005 ansible_hostname=web0005.company.com ansible_host=10.1.1.105 ansible_ssh_pass=Passw0rd
+
+# [asia]
+# web2001 ansible_hostname=web2001.company.com ansible_host=10.1.1.201 ansible_ssh_pass=Passw0rd
+# web2002 ansible_hostname=web2002.company.com ansible_host=10.1.1.202 ansible_ssh_pass=Passw0rd
+# web2003 ansible_hostname=web2003.company.com ansible_host=10.1.1.203 ansible_ssh_pass=Passw0rd
+# web2004 ansible_hostname=web2004.company.com ansible_host=10.1.1.204 ansible_ssh_pass=Passw0rd
+# web2005 ansible_hostname=web2005.company.com ansible_host=10.1.1.205 ansible_ssh_pass=Passw0rd
+
+#playbook
+- name: Generate dns hosts files on americas servers
+  hosts: dns_server_america
+  tasks:
+  - template: src=templates/hosts.j2 dest=/tmp/hosts.txt
+    vars:
+      GROUP_NAME: america
+
+- name: Generate dns hosts files on asia servers
+  hosts: dns_server_asia
+  tasks:
+  - template: src=templates/hosts.j2 dest=/tmp/hosts.txt
+    vars:
+      GROUP_NAME: asia
+
+
+#results
+# ansible dns_server_america -a "cat /tmp/hosts.txt" -i inventory
+# dns_server_america | CHANGED | rc=0 >>
+# # eg: host001 192.168.1.1
+# web0001 10.1.1.101
+# web0002 10.1.1.102
+# web0003 10.1.1.103
+# web0004 10.1.1.104
+# web0005 10.1.1.105

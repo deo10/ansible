@@ -1,0 +1,55 @@
+#variables
+
+- hosts: all
+  tasks:
+     - shell: uptime
+       register: uptime_result
+
+     - debug: var=uptime_result.stdout #print results of shell command
+	 
+
+---
+- hosts: all
+  gather_facts: no
+  tasks:
+    - name: stat module help to find the file info
+      stat:
+        path: /var/run
+      register: your_variable
+
+    # for your reference, check the outputs of these
+    - debug: var=your_variable.stat
+
+    # your code goes here...
+    - shell: echo "{{your_variable.stat}}" > /tmp/by_ansible
+	
+	
+---
+- name: help me fix it playbook
+  hosts: all
+  gather_facts: yes
+  tasks:
+    - name: alternative way to gather facts about remote host
+      setup: filter='ansible_dist*'
+      register: facts
+    - debug: var=facts.ansible_facts.ansible_distribution # or - debug: msg="{{ facts }}"
+    - shell: echo "{{facts.ansible_facts.ansible_distribution}}" > /tmp/output.txt
+
+#magic variables
+
+#inventory 
+#node00.host ansible_host=172.20.1.100 ansible_ssh_pass=Passw0rd ansible_user=root
+#node01.host ansible_host=172.20.1.101 ansible_ssh_pass=Passw0rd ansible_user=root dns_server=8.8.8.8
+---
+- hosts: all
+  become: true
+  tasks:
+    - name: magic variable - print dns server from node01 for all nodes
+      shell: "echo {{hostvars['node01.host'].dns_server}} >> /tmp/variable.txt"
+
+
+
+
+
+
+
