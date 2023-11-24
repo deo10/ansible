@@ -10,6 +10,17 @@
 #[web_servers]
 #lampweb ansible_host=172.20.1.100 ansible_ssh_private_key_file=/home/thor/.ssh/john ansible_user=john httpd_port=80 repository=https://github.com/kodekloudhub/learning-app-ecommerce.git
 
+#template /templates/db-load-script.sql.j2
+#USE {{ dbname }};
+#CREATE TABLE products (id mediumint(8) unsigned NOT NULL auto_increment,Name varchar(255) default NULL,Price varchar(255) default NULL, ImageUrl varchar(255) default NULL,PRIMARY KEY (id)) AUTO_INCREMENT=1;
+#INSERT INTO products (Name,Price,ImageUrl) VALUES ("Laptop","100","c-1.png"),("Drone","200","c-2.png"),("VR","300","c-3.png"),("Tablet","50","c-5.png"),("Watch","90","c-6.png"),("Phone Covers","20","c-7.png"),("Phone","80","c-8.png"),("Laptop","150","c-4.png");
+
+
+#index.php content changes using jinja2
+# <div class="row it_works">
+#         <?php
+#              $link = mysqli_connect("{{ hostvars['lamp-db']['ansible_facts']['eth0']['ipv4']['address'] }}", "{{ hostvars['lamp-db']['dbuser'] }}", "{{ hostvars['lamp-db']['dbpassword'] }}", "{{ hostvars['lamp-db']['dbname'] }}");
+
 #deployment-yaml file
 ---
 - hosts: all
@@ -34,9 +45,14 @@
           - MySQL-python
         state: installed
 
+    # - name: Copy the MySQL Configuration file
+    #   copy:
+    #     src: files/my.cnf
+    #     dest: /etc/my.cnf
+    
     - name: Copy the MySQL Configuration file
-      copy:
-        src: files/my.cnf
+      template:
+        src: my.cnf.j2
         dest: /etc/my.cnf
 
     - name: Start and enable Service
@@ -66,12 +82,17 @@
         name: "{{ dbuser }}"
         password: "{{ dbpassword }}"
         priv: '*.*:ALL'
-        host: '172.20.1.100'
+        host: "{{ hostvars['lampweb']['ansible_facts']['eth0']['ipv4']['address'] }}" #jinja2 usage
         state: present
 
+    # - name: Copy db-load-script.sql file to db server
+    #   copy:
+    #     src: files/db-load-script.sql
+    #     dest: /tmp/db-load-script.sql
+
     - name: Copy db-load-script.sql file to db server
-      copy:
-        src: files/db-load-script.sql
+      template:
+        src: db-load-script.sql.j2
         dest: /tmp/db-load-script.sql
 
     - name: Load Inventory data
@@ -126,7 +147,12 @@
         dest: /var/www/html/
         force: yes
     
+    # - name: Copy index.php file to web server
+    #   copy:
+    #     src: files/index.php
+    #     dest: /var/www/html/index.php
+
     - name: Copy index.php file to web server
-      copy:
-        src: files/index.php
+      template:
+        src: index.php.j2
         dest: /var/www/html/index.php
