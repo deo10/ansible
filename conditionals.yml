@@ -1,0 +1,110 @@
+
+
+---
+- name: Install apache
+  hosts: all
+  tasks:
+    # Install package with condition of the OS check
+    - name: install apache2 when Ubuntu
+      package:
+        name: apache2
+        state: present
+      when: ansible_distribution == 'Ubuntu'
+    - name: install httpd when CentOS
+      package:
+        name: httpd
+        state: present
+      when: ansible_distribution == 'CentOS'
+
+
+---
+- hosts: web2
+  gather_facts: false
+  tasks:
+    # check if git package is present, capture it's result and add one message to the txt if yes and other if not
+    - shell: dpkg -l git
+      register: check_if_git_installed
+      ignore_errors: true
+
+    - debug: var=check_if_git_installed
+    - shell: echo 'Oops, git is missing' > /tmp/is_git_installed.txt
+      when: check_if_git_installed.rc != 0  #returning code not equal 0
+
+    - shell: git --version > /tmp/is_git_installed.txt
+      when: check_if_git_installed.rc == 0  #returning code equal 0
+
+
+#inventory
+#web2 ansible_host=172.20.1.101 ansible_ssh_pass=Passw0rd ansible_user=root copy_file_only_if=true #this var is critical for copy
+#Or 
+#ansible-playbook [name] -e "copy_file_only_if=True" -i inventory
+---
+- name: copy script if not present
+  gather_facts: no
+  hosts: web2
+  vars:
+    remote_dest: /usr/local/bin/report_status.sh
+  tasks:
+    - copy:
+        src: report_status.sh
+        dest: "{{remote_dest}}"
+      when: copy_file_only_if is defined and copy_file_only_if|bool
+      ###.......................................issue is here ^
+      ### copy_file_only_if is evaluated as boolean (True or False) not == True
+
+
+
+#check the file status and base on it make a note and make it change it's mode
+---
+- hosts: web2
+  gather_facts: no
+  vars:
+    remote_dest: /usr/local/bin/report_status.sh
+  tasks:
+    - stat: #Checks the status of a file at the path specified by the remote_dest variable and registers the result in file_status.
+        path: "{{remote_dest}}"
+      register: file_status
+
+    - name: Debug message if file is not present
+      debug:
+        msg: "File is not present at {{ remote_dest }}"
+      when: not file_status.stat.exists
+
+    - debug: var=file_status #Prints out the information stored in the file_status variable.
+    - shell: echo "File report_status.sh is not executable, making it executable..." > /tmp/change.log
+      when: file_status.stat.exists and file_status.stat.executable == false
+
+    - name: Make the script executable
+      file:
+        path: "{{remote_dest}}"
+        mode: 0775
+
+
+---
+- hosts: web2
+  become: true
+  tasks:
+    - name: run script and show results of it
+      shell: sh /usr/local/bin/report_status.sh
+      register: test
+    - debug:
+        var: test
+
+
+#inventory
+#web2 ansible_host=172.20.1.101 ansible_ssh_pass=Passw0rd ansible_user=root extra_packages=htop
+#this var is critical for package install
+#Or 
+#ansible-playbook [name] -e "extra_packages=htop" -i inventory
+---
+- hosts: web2
+  gather_facts: no
+  tasks:
+    - name: install nginx
+      apt: name=nginx state=present
+      tags: [install_core]
+
+    - name: install extra packages
+      apt: name={{item}}
+      with_items: "{{extra_packages}}"
+      when: extra_packages is defined and extra_packages == "htop"
