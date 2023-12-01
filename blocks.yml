@@ -1,0 +1,36 @@
+#blocks
+checking that OS is Centos and install, start and enable httpd service
+---
+- hosts: all
+  tasks:
+    - name: Install and configure httpd web server
+      when: ansible_facts['distribution'] == 'CentOS'
+      block: #using block to combine actions that have same when condition
+        - yum:
+            name: httpd
+            state: present
+        - service:
+            name: httpd
+            state: started
+      rescue:
+        - debug:
+            msg: "Playbook has failed for {{ inventory_hostname }} node"
+
+
+
+#example for always section
+---
+- hosts: all
+  tasks:
+    - name: Create a file
+      block:
+        - file:
+            path: /tmp/file.txt
+            state: touch
+        - name: This will fail
+          command: /bin/false
+        - debug:
+            msg: "This will never run"
+      always:
+        - debug:
+            msg: "This task always runs!"
