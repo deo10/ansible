@@ -1,3 +1,26 @@
+#dirs
+#inventory -> inventory
+#inventory content
+# web1 
+# web2 
+# web3
+# [web_servers]
+# web1
+# web2
+# web3
+#
+#inventory -> host_vars -> web1.yml \ web2.yml ... same name as host
+#web1.yml content
+# ansible_host: 172.16.238.10
+# ansible_ssh_pass: Ir0nM@n
+# ansible_user: tony
+#
+#inventory -> group_vars -> web_servers.yml - sane name as group
+#web_servers.yml content
+# dns_server: 10.1.1.15
+
+
+
 #variables
 
 - hosts: all
@@ -6,7 +29,6 @@
        register: uptime_result
 
      - debug: var=uptime_result.stdout #print results of shell command
-	 
 
 ---
 - hosts: all
@@ -48,8 +70,51 @@
       shell: "echo {{hostvars['node01.host'].dns_server}} >> /tmp/variable.txt"
 
 
+#custom file for vars
+---
+- hosts: all
+  tasks:
+     - include_vars:
+         file: /opt/tmp/file.yml
+         name: file_name
 
+     - shell: echo {{ file_name }}
+       register: echo_result
 
+     - debug: var=echo_result.stdout #print results of shell command
+
+#include tasks from separate folder
+---
+- name: Configure full stack server
+  hosts: f-server-1
+  gather_facts: no
+  tasks:
+    - include_tasks: tasks/install-db-server.yml
+    - include_tasks: tasks/install-web-server.yml
+
+- name: 5563947-Install dependencies
+  yum:
+    enablerepo: extras
+    name:
+      - epel-release
+    state: installed
+
+#content of tasks/install-web-server.yml
+- name: 5563947-Install dependencies
+  yum:
+    name:
+      - python-pip
+    state: installed
+- name: 5563948-Install Python Flask dependencies
+  pip:
+    name:
+      - flask
+      - flask-mysql
+    state: present
+- name: Copy web-server code
+  copy: src=app.py dest=/opt/app.py
+- name: Start web-application
+  shell: FLASK_APP=/opt/app.py nohup flask run --host=0.0.0.0 &
 
 
 
