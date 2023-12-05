@@ -6,9 +6,31 @@
 
 #inventory file content
 #[db_servers]
-#lamp-db ansible_host=172.20.1.101 ansible_ssh_private_key_file=/home/thor/.ssh/maria ansible_user=maria mysqlservice=mysqld mysql_port=3306 dbname=ecomdb dbuser=ecomuser dbpassword=ecompassword
+#lamp-db  
 #[web_servers]
-#lampweb ansible_host=172.20.1.100 ansible_ssh_private_key_file=/home/thor/.ssh/john ansible_user=john httpd_port=80 repository=https://github.com/kodekloudhub/learning-app-ecommerce.git
+#lampweb 
+
+#host_vars/lamp-db.yml file content
+#ansible_host: 172.20.1.101
+#ansible_ssh_private_key_file: /home/thor/.ssh/maria
+#ansible_user: maria
+#host_vars/lampweb.yml file content
+#ansible_host: 172.20.1.100
+#ansible_ssh_private_key_file: /home/thor/.ssh/john
+#ansible_user: john
+
+#group_vars/db_servers.yml file content
+#ansible_user: maria
+#mysqlservice: mysqld
+#mysql_port: 3306
+#dbname: ecomdb
+#dbuser: ecomuser
+#dbpassword: ecompassword
+
+#group_vars/web_servers.yml file content
+#httpd_port: 80
+#repository: https://github.com/kodekloudhub/learning-app-ecommerce.git
+
 
 #template /templates/db-load-script.sql.j2
 #USE {{ dbname }};
@@ -26,6 +48,22 @@
 - hosts: all
   become: true
   tasks:
+    - include_tasks: tasks/common.yml
+
+- name: db server part
+  hosts: lamp-db
+  become: yes
+  tasks:
+    - include_tasks: tasks/db.yml      
+
+- name: web server part
+  hosts: lampweb
+  become: yes
+  tasks:
+    - include_tasks: tasks/web.yml
+
+
+#tasks/common.yml content
     - name: install yum packages on both servers
       yum:
         name:
@@ -34,10 +72,7 @@
           - firewalld
         state: installed
 
-- name: db server part
-  hosts: lamp-db
-  become: yes
-  tasks:
+#tasks/db.yml content
     - name: yum install packages lamp-db
       yum:
         name:
@@ -98,10 +133,7 @@
     - name: Load Inventory data
       shell: mysql -f < /tmp/db-load-script.sql
 
-- name: web server part
-  hosts: lampweb
-  become: yes
-  tasks:
+#tasks/web.yml content
     - name: yum install packages lamp-web
       yum:
         name:
