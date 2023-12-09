@@ -1,0 +1,21 @@
+#vault
+# store sensitive data like creds
+
+#to encrypt inventory
+# ansible-vault encrypt inventory
+
+#to decrypt inventory
+# ansible-vault decrypt inventory --vault-password-file ./pass.txt
+
+#to view encrypt inventory
+# ansible-vault view inventory
+
+#you can edit ansible config and put there path to password file
+# /etc/ansible/ansible.cfg
+#vault_password_file = [path]
+
+#to run playbook with encrypted inventory
+# ansible-playbook playbook.yml -i inventory --ask-vault-pass
+
+#read pass from file
+# ansible-playbook playbook.yml -i inventory --vault-password-file ./vault/pass.txt
