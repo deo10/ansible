@@ -1,0 +1,44 @@
+#dynamic inventory
+
+#AWS EC2 example
+
+#Download the ec2.py script and ec2.ini configuration file:
+#You can find the ec2.py script in the contrib directory of the Ansible GitHub repository. Download it and make it executable.
+
+#  wget https://raw.githubusercontent.com/ansible/ansible/stable-2.9/contrib/inventory/ec2.py
+#  chmod +x ec2.py
+
+#Also, download the ec2.ini file for configuration:
+
+#  wget https://raw.githubusercontent.com/ansible/ansible/stable-2.9/contrib/invwget https://raw.githubusercontent.com/ansible/ansible/stable-2.9/contrib/inventory/ec2.ini
+
+#Open the ec2.ini file and configure it according to your AWS credentials and region.
+
+# [ec2]
+# aws_access_key = <your_aws_access_key>
+# aws_secret_key = <your_aws_secret_key>
+# regions = <your_aws_region>
+
+#Make sure to replace <your_aws_access_key>, <your_aws_secret_key>, and <your_aws_region> with your actual AWS credentials and region.
+
+#Run ec2.py to generate Ansible inventory:
+#Execute the ec2.py script to generate the dynamic inventory. You can use the --list option to display the inventory in JSON format.
+
+# ./ec2.py --list
+
+#This command should output a JSON representation of your AWS EC2 instances, groups, and their attributes.
+
+#Using the generated inventory in Ansible commands:
+#You can now use this dynamic inventory in your Ansible commands by specifying -i ec2.py or setting it in your ansible.cfg file:
+
+# [defaults]
+# inventory = ./ec2.py
+
+#Execute the following command to test if Ansible is able to retrieve all the machines returned by the dynamic inventory.
+
+# ansible all --list-hosts
+#Important Note: If this command not showing any hosts and if giving error in line 172 or 173 of ec2.py file than you can simply comment that line. It will not impact any thing in the performance.
+
+#Execute the following command to list the dynamic inventory groups.
+
+# ansible-inventory --graph
