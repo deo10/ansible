@@ -1,0 +1,54 @@
+#roles
+
+#role should have it's own repo in git
+#to install role you need to use requirements.yml
+#where you will request all required roles for specific playbook
+#galaxy will clone them and put in the correct place - roles
+
+#Requirements.yml is used to manage external roles and collections.
+#It helps in specifying the dependencies required by your Ansible playbook or project.
+#This file is particularly useful when you want to include roles or collections from external sources like GitHub repositories or Ansible Galaxy.
+#requirements.yml
+- src: git+ssh://git@gitlab.com/ansible-core/ansible-role-system-users.git #repo
+  version: origin/master #branch or tag
+  name: system-users #internal name of the role
+
+#install role(s) from requirements
+#f - force rewrite
+#r - requirements for galaxy
+# ansible-galaxy install -f -r requirements.yml
+
+#to create a role
+# ansible-galaxy init [role_name]
+
+# to lists roles
+# ansible-galaxy list
+
+# to install a role from role repository
+# ansible-galaxy install [role_name] -p ./roles - to install it under current folder
+
+#role structure
+# README.md
+# templates
+# tasks
+# handlers
+# vars
+# defaults
+# meta
+
+# roles path
+# /etc/ansible/ansible.cfg
+# roles_path = /etc/ansible/roles
+
+---
+- hosts: all
+  become: true
+  roles:
+    - [role_name]
+
+---
+- hosts: all
+  become: true
+  roles:
+    - role: mysql_role #to provide more custom settings
+      become: yes
