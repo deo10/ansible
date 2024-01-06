@@ -23,7 +23,7 @@
         name:
           - php
           - httpd
-        state: installed
+        state: present
         
     - name: Create doc root
       file:
@@ -41,7 +41,7 @@
     - name: There is a template
       template:
         src: /templates/phpinfo.php.j2
-        dest: /var/www/html/myroot
+        dest: /var/www/html/myroot/phpinfo.php
         owner: apache
         group: apache
 
