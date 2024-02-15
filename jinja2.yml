@@ -291,3 +291,33 @@
 # web0003 10.1.1.103
 # web0004 10.1.1.104
 # web0005 10.1.1.105
+
+
+---
+# example from kodekloud engineer task
+
+
+#template templates/index.html.j2
+This file was created using Ansible on {{ inventory_hostname }}
+---
+#role/httpd/tasks/main.yml
+
+- name: install the latest version of HTTPD
+  yum:
+    name: httpd
+    state: latest
+
+- name: Start service httpd
+  service:
+    name: httpd
+    state: started
+
+- name: Copy template
+  template:
+    src: index.html.j2
+    dest: /var/www/html/index.html
+    mode: "0644"
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+  become: yes
+  become_user: root

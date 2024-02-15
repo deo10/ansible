@@ -1,22 +1,4 @@
----
-- hosts: node01
-  become: true
-  tasks:
-    - name: Creating blog.txt file
-      file:
-        path: /opt/news/blog.txt
-        state: touch
-        group: sam
 
-- hosts: node02
-  become: true
-  tasks:
-    - name: Creating story.txt file
-      file:
-        path: /opt/news/story.txt
-        state: touch
-        owner: sam
-		
 ---
 - name: Create new file with content
   hosts: web1
@@ -25,6 +7,16 @@
       path: /var/www/html/index.html
       line: 'This line was added using Ansible lineinfile module!'
       create: yes
+
+---
+- name: insert iptables rule
+  lineinfile:
+    dest: /etc/sysconfig/iptables
+    state: present
+    regexp: "{{ mysql_port }}"
+    insertafter: "^:OUTPUT "
+    line: "-A INPUT -p tcp  --dport {{ mysql_port }} -j  ACCEPT"
+  notify: restart iptables
 
 
 #istall httpd and create/add content in index.html
