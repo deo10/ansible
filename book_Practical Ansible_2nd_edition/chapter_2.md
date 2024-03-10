@@ -73,3 +73,64 @@ ANSIBLE_HOME(default) = /home/james/.ansible
 …
 CONFIG_FILE() = None
 …
+
+# ansible vars
+
+---
+- name: Display redis variables
+  hosts: all
+
+  vars:
+    redis:
+      server: cacheserver01.example.com
+      port: 6379
+      slaveof: cacheserver02.example.com
+
+  tasks:
+    - name: Display the redis port
+      ansible.builtin.debug:
+        msg: "The redis port for {{ redis.server }} is {{ redis.port }}"
+
+#another example
+---
+- name: Parse the employees playbook
+  hosts: localhost
+  vars_files:
+    - employees-all.yml
+
+  tasks:
+    - name: Print the variables
+      debug:
+        var: employees
+
+
+#employees-all.yml
+---
+servers:
+  - frontend
+  - backend
+  - database
+  - cache
+employees:
+  - name: daniel
+    fullname: Daniel Oh
+    role: DevOps Evangelist
+    level: Expert
+    skills:
+      - Kubernetes
+      - Microservices
+      - Ansible
+      - Linux Container
+  - name: michael
+    fullname: Michael Smiths
+    role: Enterprise Architect
+    level: Advanced
+    skills:
+      - Cloud
+      - Middleware
+      - Windows
+      - Storage
+    Speciality: |
+      Agile methodology
+      Cloud-native app development practices
+      Advanced enterprise DevOps practices
