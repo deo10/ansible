@@ -7,11 +7,7 @@ https://github.com/ansible/ansible
 
 # Display gathered facts:
 ansible webservers -i /etc/ansible/hosts -m ansible.builtin.setup | less
-<<<<<<< HEAD
-#with filter
-=======
-filter
->>>>>>> 3cfecdb70d1e2b98dd2ac4ede325d5da3835aab6
+# with filter
 ansible webservers -i /etc/ansible/hosts -m ansible.builtin.setup -a "filter=ansible_distribution*"
 
 # console common tasks
