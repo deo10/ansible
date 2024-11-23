@@ -1,0 +1,67 @@
+# Using a playbook ~/playbooks/apache.yml (create new if doesn't exist)
+# perform the below given tasks on node01:
+
+# a. Install httpd and php packages.
+
+# b. Change default document root of Apache to /var/www/html/myroot in default Apache
+# config /etc/httpd/conf/httpd.conf. Make sure /var/www/html/myroot path exists.
+
+# c. There is a template ~/playbooks/templates/phpinfo.php.j2 on ansible controller node.
+# Copy this template to Apache document root on node01 host as phpinfo.php file and make
+# sure owner and group owner is apache user.
+
+# d. Start and enable httpd service.
+
+# e. Add rule in firewalld public zone to open http port 80 for public access
+# so that phpinfo.php page is accessible in browser, also rule should be permanent.
+
+
+
+# ansible-playbook apache.yml -i inventory 
+# apache.yml
+---
+- hosts: node01
+  become: true
+  tasks:
+    - name: Install packages
+      yum:
+        name:
+          - php
+          - httpd
+        state: present
+        
+    - name: Create doc root
+      file:
+        path: /var/www/html/myroot
+        state: directory
+        owner: apache
+        group: apache
+
+    - name: Change default document root of Apache
+      replace:
+        path: /etc/httpd/conf/httpd.conf
+        regexp: 'DocumentRoot "/var/www/html"'  # The string you want to find
+        replace: 'DocumentRoot "/var/www/html/myroot"'  # The string you want to replace it with
+
+    - name: There is a template
+      template:
+        src: ./templates/phpinfo.php.j2
+        dest: /var/www/html/myroot/phpinfo.php
+        owner: apache
+        group: apache
+
+
+    - name: Start and enable httpd service
+      service:
+        name: "{{ item }}"
+        state: started
+        enabled: yes
+      with_items:
+        - httpd
+
+    - name: Add rule in firewalld public zone
+      firewalld:
+        port: 80/tcp
+        zone: public
+        permanent: yes
+        state: enabled

@@ -1,0 +1,77 @@
+# Add an entry for node00 in ~/playbooks/inventory file.
+# IP address of node00 host is 172.20.1.100 and SSH user and password is root and Passw0rd.
+# We have a list of users in ~/playbooks/data/users.yml file.
+# There are two groups in there admins and developers which have list of different users.
+# Create a playbook ~/playbooks/add_users.yml to perform below given tasks on node00 node:
+
+
+# a. Add all users given in users.yml on node00.
+
+# b. Make sure home directory for all users under developers group is /var/www
+# and for admins it should be default.
+
+# c. Set password d3v3l0p3r for all users under developers group and adm$n$ for users
+# under admins group. Make sure to use Ansible vault to encrypt the passwords,
+# use ~/playbooks/secrets/vault.txt file as vault secret file.
+
+# d. All users under admins group must be added as sudo user, for that simply make them
+# member of wheel group on node00
+
+#inventory
+#node00 ansible_host=172.20.1.100 ansible_ssh_pass=Passw0rd ansible_user=root
+
+#Create vault password for admins and developers, run under playbook folder to use vault password
+# ansible-vault encrypt_string 'adm$n$'
+# ansible-vault encrypt_string 'd3v3l0p3r'
+
+# ansible-playbook add_users.yml -i inventory
+
+# add_users.yml
+---
+- hosts: node00
+  become: true
+  vars: #put vault password value here
+    admin_pass: !vault |
+        $ANSIBLE_VAULT;1.1;AES256
+        65613832373961323931313235366434613733643030306534316438343535633030333062646333
+        6237633635636235336362633662663330613561386364610a613336323430303333343565336534
+        62613666653563386562393230346161306630383464636536363830663432353733316430623836
+        3336326462653232320a303134336665333130633536626231613532336161363364343637623934
+        3833
+    developer_pass: !vault |
+        $ANSIBLE_VAULT;1.1;AES256
+        38373664316639666661303435663038346131316435336264323430636564383665353861646666
+        6431653465663061386532376630653164643964383136360a356637346364346562363361326439
+        35333133613965306439326439633031313535393966633334346631363964316634316637353638
+        3237346435363762360a396233336236656232373235623436343630343539646233346463353036
+        6563
+  tasks:
+    - name: Include user details from file
+      include_vars:
+        file: ./data/users.yml
+
+    - name: Create groups
+      group:
+        name: "{{ item }}"
+        state: present
+      loop:
+        - admins
+        - developers
+
+    - name: Create and set admin passwords
+      user:
+        name: "{{ item }}"
+        password: "{{ admin_pass | string | password_hash('sha512') }}"
+        groups: admins, wheel
+      with_items: "{{ admins }}"
+      when: admins is defined
+
+    - name: Create and set developer passwords
+      user:
+        name: "{{ item }}"
+        password: "{{ developer_pass | string | password_hash('sha512') }}"
+        groups: developers
+        home: /var/www/
+      with_items: "{{ developers }}"
+      when: developers is defined
+
