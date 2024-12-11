@@ -1,0 +1,32 @@
+# A new developer called "John Doe" is recently hired in your team.
+# He needs to get inside all the remote servers via ssh as root user.
+
+# Write a playbook /home/thor/playbooks/give_ssh_access.yml to give ssh access
+# on all the remote servers by pushing his public key:
+# /home/thor/playbooks/john_doe.pub on all of them.
+
+# List of all servers is listed in the inventory /home/thor/playbooks/inventory
+
+/home/thor/playbooks/inventory:
+# node00 ansible_host=172.20.1.100 ansible_ssh_pass=Passw0rd ansible_user=root
+# node01 ansible_host=172.20.1.101 ansible_ssh_pass=Passw0rd ansible_user=root
+
+/home/thor/playbooks/give_ssh_access.yml:
+---
+- name: Give SSH access to John Doe
+  hosts: all
+  become: yes
+  tasks:
+    - name: Ensure that the SSH directory exists for the root user
+      ansible.builtin.file:
+        path: /root/.ssh
+        state: directory
+        mode: '0700'
+        owner: root
+        group: root
+
+    - name: Install John Doe's public key in authorized_keys
+      ansible.builtin.authorized_key:
+        user: root
+        state: present
+        key: "{{ lookup('file', '/home/thor/playbooks/john_doe.pub') }}"

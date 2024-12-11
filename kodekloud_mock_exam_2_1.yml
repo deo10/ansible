@@ -1,0 +1,28 @@
+# A cli tool called awscli has been installed using pip3, and its out of date on remote servers.
+# Ensure that it is updated to the latest version.
+
+
+# Write a playbook /home/thor/playbooks/update_version.yml to update aws
+# cli to the latest version. Use inventory /home/thor/playbooks/inventory
+
+inventory:
+# node00 ansible_host=172.20.1.100 ansible_ssh_pass=Passw0rd ansible_user=root
+# node01 ansible_host=172.20.1.101 ansible_ssh_pass=Passw0rd ansible_user=root
+
+/home/thor/playbooks/update_version.yml:
+---
+- name: Update awscli on remote servers
+  hosts: all
+  become: yes
+  tasks:
+    - name: Ensure pip3 is installed
+      ansible.builtin.package:
+        name: python3-pip
+        state: present
+    
+    - name: Upgrade awscli using pip3
+      ansible.builtin.pip:
+        name: awscli
+        state: latest
+        executable: pip3
+

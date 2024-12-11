@@ -1,0 +1,29 @@
+# Write a playbook to copy the secret file located at /home/thor/playbooks/secret_file.txt
+# to all remote hosts at location: /root/.secret_file.txt
+# Your playbook must be located at: /home/thor/playbooks/copy_secrets.yml
+# Use inventory file: /home/thor/playbooks/inventory.
+# The secret file is encrypted, please use the vault password from the script
+# /home/thor/playbooks/get_vault_pass.txt while you execute the playbook.
+
+/home/thor/playbooks/inventory:
+# node00 ansible_host=172.20.1.100 ansible_ssh_pass=Passw0rd ansible_user=root
+# node01 ansible_host=172.20.1.101 ansible_ssh_pass=Passw0rd ansible_user=root
+
+---
+# IMPORTANT run playbook with vault secret
+# ansible-playbook -i /home/thor/playbooks/inventory /home/thor/playbooks/copy_secrets.yml --vault-password-file /home/thor/playbooks/get_vault_pass.txt
+
+
+/home/thor/playbooks/copy_secrets.yml:
+---
+- name: Copy encrypted secret file to remote hosts
+  hosts: all
+  become: yes
+  tasks:
+    - name: Copy the secret file to /root/.secret_file.txt
+      ansible.builtin.copy:
+        src: /home/thor/playbooks/secret_file.txt
+        dest: /root/.secret_file.txt
+        owner: root
+        group: root
+        mode: '0600'

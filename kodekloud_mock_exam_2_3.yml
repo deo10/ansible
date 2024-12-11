@@ -1,0 +1,37 @@
+# Write a playbook /home/thor/playbooks/configure_webserver.yml which
+# installs nginx web server and serves a html file:
+# index.html from directory /usr/share/nginx/html on remote servers.
+
+
+# You are provided with /home/thor/playbooks/index.html that you should
+# copy to remote web servers listed on inventory /home/thor/playbooks/inventory.
+# Ensure that nginx is serving the file, that you copied.
+
+/home/thor/playbooks/inventory:
+# node00 ansible_host=172.20.1.100 ansible_ssh_pass=Passw0rd ansible_user=root
+# node01 ansible_host=172.20.1.101 ansible_ssh_pass=Passw0rd ansible_user=root
+
+/home/thor/playbooks/configure_webserver.yml:
+---
+- name: Configure Nginx web server and serve a custom html file
+  hosts: all
+  become: yes
+  tasks:
+    - name: Install nginx
+      ansible.builtin.package:
+        name: nginx
+        state: present
+
+    - name: Copy index.html to Nginx directory
+      ansible.builtin.copy:
+        src: /home/thor/playbooks/index.html
+        dest: /usr/share/nginx/html/index.html
+        owner: root
+        group: root
+        mode: '0644'
+
+    - name: Ensure nginx is running and enabled
+      ansible.builtin.systemd:
+        name: nginx
+        state: started
+        enabled: true
