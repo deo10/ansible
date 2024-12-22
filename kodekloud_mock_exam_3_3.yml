@@ -1,0 +1,40 @@
+# Using an Ansible playbook install firewalld on node00 node,
+# start its service as well. Name the playbook as firewall.yml
+# and keep it under ~/playbooks and also white list node01 host's IP
+# address 172.20.1.101 on node00
+
+
+# inventory: 
+# node00 ansible_host=172.20.1.100 ansible_ssh_pass=Passw0rd ansible_user=root
+# node01 ansible_host=172.20.1.101 ansible_ssh_pass=Passw0rd ansible_user=root
+
+
+# firewall.yml:
+---
+- hosts: node00
+  become: true
+  tasks:
+    - name: install package
+      yum:
+        name:
+          - firewalld
+        state: installed
+
+    - name: Start and enable Service
+      service:
+        name: "{{ item }}"
+        state: started
+        enabled: yes
+      with_items:
+        - firewalld
+   
+    - name: white list node01 host's IP address 172.20.1.101 on node00
+      firewalld:
+        source: 172.20.1.101
+        zone: internal
+        state: enabled
+        permanent: yes
+
+    - service:
+        name: firewalld
+        state: reloaded

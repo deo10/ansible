@@ -1,0 +1,25 @@
+# We have two nodes that are managed by Ansible.
+# There is an inventory file ~/playbooks/inventory on Ansible controller
+# which has all these two nodes added. Create a playbook ~/playbooks/blocks.yml on
+# Ansible controller to install httpd web server and start its service.
+
+
+# Create the playbook using blocks to logically group the tasks
+# (installation and service start).
+
+# ~/playbooks/inventory:
+# node00 ansible_host=172.20.1.100 ansible_ssh_pass=Passw0rd ansible_user=root
+# node01 ansible_host=172.20.1.101 ansible_ssh_pass=Passw0rd ansible_user=root
+
+# ~/playbooks/blocks.yml:
+---
+- hosts: all
+  tasks:
+    - name: Install and configure httpd web server
+      block:
+        - yum:
+            name: httpd
+            state: present
+        - service:
+            name: httpd
+            state: started
