@@ -1,0 +1,30 @@
+# Write a playbook: ~/playbooks/add_user_with_ssh.yml to create a user:
+# deploy on remote hosts.
+# Its a best practice to ssh using public-key than to use a plain text password.
+# Copy the public key: ~/playbooks/devops.pub to remote hosts inside deploy
+# user's authorized_keys.
+
+# Use inventory file: ~/playbooks/inventory.
+
+---
+- name: Create user deploy on remote hosts
+  hosts: all
+  tasks:
+    - name: Ensure sudo group is present
+      group:
+        name: sudo
+        state: present
+
+    - name: Ensure deploy user is present
+      user:
+        name: deploy
+        state: present
+        groups: sudo
+        append: yes
+
+    - name: Copy the public key inside deploy user's authorized_keys
+      authorized_key:
+        user: deploy
+        state: present
+        key: "{{ lookup('file', 'devops.pub') }}"
+

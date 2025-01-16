@@ -1,0 +1,40 @@
+# Perform the following tasks:
+
+# Install ansible using the package manager if not installed.
+# Generate your ssh key to path ~/.ssh/id_rsa
+# Push the public key: (~/.ssh/id_rsa.pub) on the remote servers listed in:
+# ~/playbooks/inventory
+# Test your setup is working with:
+# ansible all -m ping -i /home/thor/playbooks/inventory
+
+---
+- name: Ensure SSH key is present
+  hosts: localhost
+  tasks:
+    - name: Check if SSH key exists
+      stat:
+        path: ~/.ssh/id_rsa
+      register: ssh_key
+
+    - name: Generate SSH key
+      command: ssh-keygen -t rsa -b 2048 -f ~/.ssh/id_rsa -N ''
+      when: not ssh_key.stat.exists
+
+- name: Distribute SSH key to remote servers
+  hosts: all
+  vars:
+    ansible_user: root
+    ansible_ssh_pass: Passw0rd
+  tasks:
+    - name: Copy SSH key to remote servers
+      authorized_key:
+        user: root
+        state: present
+        key: "{{ lookup('file', lookup('env', 'HOME') + '/.ssh/id_rsa.pub') }}"
+
+- name: Test SSH connection to all hosts
+  hosts: all
+  tasks:
+    - name: Test connectivity to all hosts using ping module
+      ping:
+

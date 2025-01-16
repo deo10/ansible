@@ -1,0 +1,130 @@
+# Write a playbook ~/playbooks/logrotate.yml to configure log-rotation on
+# remote hosts.
+
+# Complete the following tasks:
+
+# Grab the module from GitHub: https://github.com/arillso/ansible.logrotate
+# Use ansible-galaxy install command to install inside the /home/thor/playbooks/roles
+# If you stumbled upon the issue, could not find/use git,
+# install git in the ansible-runner first and install the role.
+
+# Configure your log rotation rules as:
+
+# daily
+# rotate 3
+# compress
+# …to rotate a log file that would present on location /var/log/myapp.log
+
+# That means rotate daily, compress the log file and keep the last three rotations.
+# Check on the options section that the role provides.
+# Since this role depends on facts on remote hosts, make sure to gather
+# facts is not false.
+
+->
+ansible-galaxy install git+https://github.com/arillso/ansible.logrotate --roles-path ~/playbooks/roles
+
+
+# Update roles/ansible.logrotate/defaults/main.yml and modify logrotate_applications section as below:
+# logrotate_applications:
+  # - name: myapp
+  #   definitions:
+  #     - logs:
+  #         - /var/log/myapp.log
+  #       options:
+  #         - daily
+  #         - rotate 3
+  #         - compress
+
+---
+# List of global options. If this is empty the default options of the
+# distribution are used.
+logrotate_options: []
+
+# Path to the include files
+logrotate_include_dir: /etc/logrotate.d
+
+# Package name to install logrotate.
+logrotate_package: logrotate
+
+# Enable global configuration handling
+logrotate_global_config: true
+
+# Enable hourly rotation with cron.
+logrotate_use_hourly_rotation: false
+
+# Logrotate for wtmp
+logrotate_wtmp_enable: true
+logrotate_wtmp:
+  logs:
+    - /var/log/wtmp
+  options:
+    - missingok
+    - monthly
+    - create 0664 root utmp
+    - rotate 1
+
+# Logrotate for btmp
+logrotate_btmp_enable: true
+logrotate_btmp:
+  logs:
+    - /var/log/btmp
+  options:
+    - missingok
+    - monthly
+    - create 0660 root utmp
+    - rotate 1
+
+# logrotate_applications:
+    - name: myapp
+      definitions:
+        - logs:
+            - /var/log/myapp.log
+          options:
+            - daily
+            - rotate 3
+            - compress
+
+# More log files can be added that will log rotate.
+# An example of multiple log rotate applications with available settings:
+# logrotate_applications:
+#   - name: name-your-log-rotate-application
+#     definitions:
+#       - logs:
+#           - /var/log/apt/term.log
+#           - /var/log/apt/history.log
+#         options:
+#           - rotate 12
+#           - monthly
+#           - missingok
+#           - notifempty
+#           - compress
+
+
+# Write a playbook ~/playbooks/logrotate.yml to configure log-rotation on
+# remote hosts.
+~/playbooks/logrotate.yml:
+---
+- hosts: all
+  gather_facts: yes
+  roles:
+    - ansible.logrotate
+
+  tasks:
+    - name: Ensure logrotate is installed
+      package:
+        name: logrotate
+        state: present
+
+    - name: Ensure logrotate is running
+      service:
+        name: logrotate
+        state: started
+        enabled: yes
+
+    - name: Ensure logrotate configuration is present
+      copy:
+        src: /etc/logrotate.conf
+        dest: /etc/logrotate.conf
+        owner: root
+        group: root
+        mode: 0644
