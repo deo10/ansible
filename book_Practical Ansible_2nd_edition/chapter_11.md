@@ -29,4 +29,5 @@ $ ansible-galaxy collection install [path]
 ansible-galaxy and its documentation can be found here:
 https://galaxy.ansible.com/docs/
 
-# Creating and Consuming Plugins
+# Coding Best Practices
+
