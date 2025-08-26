@@ -1,0 +1,30 @@
+
+- name: Deploy Multi-Tier Application
+  hosts: all
+  become: true
+  vars_files:
+    - group_vars/all.yml
+    - group_vars/vault.yml
+  roles:
+    - role: postgres
+      when: "'db' in group_names"
+    - role: flask_app
+      when: "'app' in group_names"
+    - role: nginx
+      when: "'web' in group_names"
+
+- name: Enforce password change policy
+  hosts: all
+  become: true
+  tasks:
+    - name: Ensure password expires every 90 days for all users
+      ansible.builtin.command: chage --maxdays 90 {{ item.name }}
+      loop: "{{ ansible_users | default([]) }}"
+      when: item.name != 'root'
+      register: passwd_policy_result
+
+    - name: Log failed password policy changes
+      ansible.builtin.debug:
+        msg: "Failed to set password policy for user {{ item.item.name }}: {{ item.stderr }}"
+      loop: "{{ passwd_policy_result.results | selectattr('rc', '!=', 0) | list }}"
+      when: passwd_policy_result is defined and passwd_policy_result.results | selectattr('rc', '!=', 0) | list | length > 0

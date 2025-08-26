@@ -1,0 +1,32 @@
+
+- name: Install PostgreSQL
+  ansible.builtin.package:
+    name: postgresql
+    state: present
+
+- name: Ensure PostgreSQL service is running and enabled
+  ansible.builtin.service:
+    name: postgresql
+    state: started
+    enabled: yes
+
+- name: Set PostgreSQL password for postgres user
+  become_user: postgres
+  ansible.builtin.postgresql_user:
+    name: postgres
+    password: "{{ postgres_password }}"
+
+- name: Create application database
+  become_user: postgres
+  ansible.builtin.postgresql_db:
+    name: "{{ app_db_name }}"
+    state: present
+
+- name: Create application DB user
+  become_user: postgres
+  ansible.builtin.postgresql_user:
+    name: "{{ app_db_user }}"
+    password: "{{ app_db_password }}"
+    db: "{{ app_db_name }}"
+    priv: "ALL"
+    state: present

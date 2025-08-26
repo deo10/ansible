@@ -1,0 +1,4 @@
+
+# Sensitive variables (encrypt this file with ansible-vault)
+postgres_password: "{{ vault_postgres_password | default('changeme_postgres') }}"
+app_db_password: "{{ vault_app_db_password | default('changeme_appdb') }}"

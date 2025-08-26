@@ -1,0 +1,19 @@
+
+- name: Install latest Nginx
+  ansible.builtin.package:
+    name: nginx
+    state: latest
+
+- name: Deploy secure Nginx configuration
+  ansible.builtin.template:
+    src: ngingx.conf.j2
+    dest: /etc/nginx/nginx.conf
+    mode: '0644'
+  notify:
+    - Reload nginx
+
+- name: Ensure Nginx is running and enabled
+  ansible.builtin.service:
+    name: nginx
+    state: started
+    enabled: yes

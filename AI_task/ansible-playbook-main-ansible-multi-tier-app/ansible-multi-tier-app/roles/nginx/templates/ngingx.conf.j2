@@ -1,0 +1,63 @@
+
+user www-data;
+worker_processes auto;
+pid /run/nginx.pid;
+include /etc/nginx/modules-enabled/*.conf;
+
+events {
+    worker_connections 1024;
+}
+
+http {
+    sendfile on;
+    tcp_nopush on;
+    tcp_nodelay on;
+    keepalive_timeout 65;
+    types_hash_max_size 2048;
+    include /etc/nginx/mime.types;
+    default_type application/octet-stream;
+
+    # Security headers
+    add_header X-Frame-Options "SAMEORIGIN" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header X-XSS-Protection "1; mode=block" always;
+
+    # Hide nginx version
+    server_tokens off;
+
+    # For production, enable HTTPS and redirect HTTP to HTTPS
+    # See: https://nginx.org/en/docs/http/configuring_https_servers.html
+
+    # Restrict access to allowed IPs only
+    geo $allowed_ip {
+        default 0;
+        {{ allowed_ip }} 1;
+    }
+
+    map $allowed_ip $deny {
+        0 1;
+        1 0;
+    }
+
+    server {
+        listen 80 default_server;
+        listen [::]:80 default_server;
+        server_name _;
+
+        # Deny by default, allow only from allowed_ip
+        if ($deny) {
+            return 403;
+        }
+
+        location / {
+            proxy_pass http://127.0.0.1:5000;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+        }
+
+        access_log /var/log/nginx/access.log;
+        error_log /var/log/nginx/error.log;
+    }
+}

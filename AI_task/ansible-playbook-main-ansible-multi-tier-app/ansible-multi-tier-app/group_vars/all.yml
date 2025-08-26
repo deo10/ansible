@@ -1,0 +1,12 @@
+
+# Application variables
+app_db_name: flaskdb
+app_db_user: flaskuser
+
+# Nginx allowed IP (set to your trusted IP or subnet)
+allowed_ip: 192.168.1.0/24
+
+# List of users for password policy enforcement
+ansible_users:
+  - name: deploy
+  - name: appuser
